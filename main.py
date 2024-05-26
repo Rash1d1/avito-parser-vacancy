@@ -1,19 +1,18 @@
 import datetime
-import time
 import asyncio
 from asyncio import WindowsSelectorEventLoopPolicy
 from curl_cffi.requests import AsyncSession
 import unicodedata
-# from curl_cffi import requests
-
 from selectolax.parser import HTMLParser
 from urllib.parse import unquote
 import json
-
+# from curl_cffi import requests
 
 asyncio.set_event_loop_policy(WindowsSelectorEventLoopPolicy())
 LINK = "https://www.avito.ru"
 s = AsyncSession()
+Sem = asyncio.Semaphore(8)
+
 
 def processSalary(salaryString):
     minMaxArr = [None, None]
@@ -28,7 +27,7 @@ def processSalary(salaryString):
         minMaxArr[0] = "".join(filter(str.isdigit, fromToDigits[0]))
         minMaxArr[1] = "".join(filter(str.isdigit, fromToDigits[1]))
     return minMaxArr
-async def proccessCurrency(job):
+def proccessCurrency(job):
     currency_symbols = ['$', '€', '£', '¥', '₹', '₽', '฿', '₿', '₴', '₩', '₺', '₸', '₮', '₦', '₱', '₲', '₳', '₵', '₡',
                         '₢', '₣', '₤', '₥', '₰', '₶', '₷', '₸', '₹', '₺', '₻', '₼', '₽', '₾', '₿']
 
@@ -38,7 +37,7 @@ async def proccessCurrency(job):
                 return char
 
     return None
-async def proccessSalarySchedule(job):
+def proccessSalarySchedule(job):
     if "за смену" in job["priceDetailed"]["fullString"]:
         return "За смену"
     else:
@@ -48,50 +47,50 @@ async def proccessSalarySchedule(job):
                 if "Выплаты" in string:
                     return string.replace("Выплаты", "").strip()
             return None
-async def proccessSchedule(job):
+def proccessSchedule(job):
     try:
         return job["iva"]["ParamsStep"][0]["payload"]["text"].split("·")[0]
     except:
         return None
-async def proccessExperience(job):
+def proccessExperience(job):
     if isinstance(job["iva"]["ParamsStep"][0]["payload"]["text"], str):
         scheduleString = job["iva"]["ParamsStep"][0]["payload"]["text"].split("·")
         for string in scheduleString:
             if "Опыт" in string:
                 return string.replace("Опыт", "").strip()
         return None
-async def proccessEmpoler(job):
+def proccessEmpoler(job):
     try:
         return job["iva"]["UserInfoStep"][0]["payload"]["profile"]["title"]
     except:
         return None
-async def proccessEmpolerLink(job):
+def proccessEmpolerLink(job):
     try:
         return LINK + str(job["iva"]["UserInfoStep"][0]["payload"]["profile"]["link"])
     except:
         return None
-async def proccessLocation(job):
+def proccessLocation(job):
     try:
         s1 = job["coords"]["address_user"]
         s2 = job["iva"]["GeoStep"][0]["payload"]["geoForItems"]["formattedAddress"]
         return max(s1, s2, key=len)
     except:
         return None
-async def processJobTokens(job):
+def processJobTokens(job):
     tokens = {}
     tokens["Id"] = str(job["id"])
     tokens["Title"] = str(job["title"])
     tokens["Link"] = LINK + str(job["urlPath"])
     tokens["MinSalary"] = str(processSalary(job["priceDetailed"]["fullString"])[0])
     tokens["MaxSalary"] = str(processSalary(job["priceDetailed"]["fullString"])[1])
-    tokens["Currency"] = str(await proccessCurrency(job))
-    tokens["SalarySchedule"] = str(await proccessSalarySchedule(job))
-    tokens["Schedule"] = str(await proccessSchedule(job))
-    tokens["Experience"] = str(await proccessExperience(job))
+    tokens["Currency"] = str( proccessCurrency(job))
+    tokens["SalarySchedule"] = str( proccessSalarySchedule(job))
+    tokens["Schedule"] = str(proccessSchedule(job))
+    tokens["Experience"] = str(proccessExperience(job))
     tokens["Description"] = str(job["description"])
-    tokens["Employer"] = str(await proccessEmpoler(job))
-    tokens["LinkToEmployer"] = str(await proccessEmpolerLink(job))
-    tokens["Location"] = str(await proccessLocation(job))
+    tokens["Employer"] = str( proccessEmpoler(job))
+    tokens["LinkToEmployer"] = str( proccessEmpolerLink(job))
+    tokens["Location"] = str( proccessLocation(job))
     tokens["TimeOfPublication"] = str(datetime.datetime.fromtimestamp(int(job["sortTimeStamp"])/1000).strftime('%Y-%m-%d %H:%M:%S'))
 
     print(tokens)
@@ -128,7 +127,7 @@ async def parse(url):
                 jobs = data[key]["data"]["catalog"]["items"]
                 for job in jobs:
                     if job.get("id"):
-                        await processJobTokens(job)
+                        processJobTokens(job)
                 print("______________________________________________")
 
 
@@ -161,21 +160,34 @@ async def startParsing(url):
                     return "Не найдено вакансий"
                 else:
                     for job in jobs:
-                        if job.get("id"):
-                            await processJobTokens(job)
-
+                        # if job.get("id"):
+                            processJobTokens(job)
 
     tasks = []
     url += "&p=1"
-    for i in range(2, min(13, numberOfJobs / 50)):
-        url = url.replace(f"&p={i - 1}", f"&p={i}")
-        tasks.append(asyncio.create_task(parse(url)))
-    await asyncio.gather(*tasks)
+    for i in range(2, min(8, numberOfJobs//50)):
+        new_url = url.replace(f"&p={i - 1}", f"&p={i}")
+        tasks.append(new_url)
+    task_runner = TaskRunner()
+    await task_runner.run_tasks(parse(url), tasks)
 
-
-
+class TaskRunner:
+    @classmethod
+    async def run_tasks(cls, func, tasks):
+        sem = asyncio.Semaphore(6)
+        async_tasks = []
+        async def task_wrapper(t):
+            async with sem:
+                try:
+                    await func(t)
+                except Exception as e:
+                    raise e
+        for task in tasks:
+            t = asyncio.create_task(task_wrapper(task))
+            async_tasks.append(t)
+        await asyncio.gather(*async_tasks)
 async def main():
-    url = "https://www.avito.ru/tatarstan/vakansii?cd=1&q=%D0%BF%D0%BE%D0%B4%D1%80%D0%B0%D0%B1%D0%BE%D1%82%D0%BA%D0%B0"
+    url = "https://www.avito.ru/tatarstan/vakansii?p=53&q=%D1%82%D0%BE%D0%BA%D0%B0%D1%80%D1%8C"
     await startParsing(url)
 
 
