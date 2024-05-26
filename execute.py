@@ -1,11 +1,10 @@
 import api
-import parser
 import task_runner
 
 
 async def parse(url):
     r = await api.API.request(url)
-    parser_obj = parser.Parser(r)
+    parser_obj = parserParser(r)
     parsed_jobs = parser_obj.result()
     print("_________________________________________________________________")
 

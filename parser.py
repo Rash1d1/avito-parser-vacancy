@@ -4,11 +4,13 @@ from urllib.parse import unquote
 import json
 import vacancy_serializer
 import parsed_item
+import api
+from task_runner import TaskRunner
+from config import LIMIT, url_to_parse
 
 
 class Parser:
-    def __init__(self, response):
-        self.r = response
+    r = None
 
     def response_to_json(self):
         scripts = HTMLParser(self.r.text).css('script')
@@ -73,3 +75,18 @@ class Parser:
                 parsed_job = self.vacancy(job)
                 parsed_jobs.append(parsed_job)
         return parsed_jobs
+
+    async def parse_page(self, url):
+        self.r = await api.API.request(url)
+        parsed_jobs = self.result()
+        print("_________________________________________________________________")
+
+    async def parse(self):
+        await self.parse_page(url_to_parse)
+        number_of_elements = self.find_number_of_vacancies()
+        tasks = []
+        url = url_to_parse + "&p=1"
+        for i in range(2, min(LIMIT, number_of_elements // 50)):
+            url = url.replace(f"&p={i - 1}", f"&p={i}")
+            tasks.append(url)
+        await TaskRunner().run_tasks(self.parse_page, tasks)

@@ -1,8 +1,8 @@
 # import datetime
 import asyncio
-import execute
-from config import url_to_parse
+from parser import Parser
 from asyncio import WindowsSelectorEventLoopPolicy
+
 # from curl_cffi.requests import AsyncSession
 # import unicodedata
 # from selectolax.parser import HTMLParser
@@ -11,6 +11,8 @@ from asyncio import WindowsSelectorEventLoopPolicy
 # # from curl_cffi import requests
 #
 asyncio.set_event_loop_policy(WindowsSelectorEventLoopPolicy())
+
+
 # LINK = "https://www.avito.ru"
 # s = AsyncSession()
 # Sem = asyncio.Semaphore(8)
@@ -188,8 +190,8 @@ asyncio.set_event_loop_policy(WindowsSelectorEventLoopPolicy())
 #             async_tasks.append(t)
 #         await asyncio.gather(*async_tasks)
 async def main():
-    await execute.execute(url_to_parse)
-
+    parser = Parser()
+    await parser.parse()
 
 if __name__ == '__main__':
     asyncio.run(main())
