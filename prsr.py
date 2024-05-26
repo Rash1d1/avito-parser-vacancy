@@ -1,6 +1,6 @@
+import asyncio
 import datetime
-import time
-
+from excel_storage import DbExcelJobs
 from selectolax.parser import HTMLParser
 from urllib.parse import unquote
 import json
@@ -8,9 +8,11 @@ import vacancy_serializer
 import parsed_item
 from api import API
 from task_runner import TaskRunner
-from config import LIMIT, url_to_parse
+from config import LIMIT, url_to_parse, LINK
 
+data_base = DbExcelJobs("DB.xlsx")
 t = 1
+
 
 def response_to_json(r):
     scripts = HTMLParser(r.text).css('script')
@@ -40,11 +42,12 @@ def find_vacancy_catalog(data):
 
 def vacancy(job):
     global t
+    global data_base
     s = vacancy_serializer.VacancySerializer(job)
     parsed_job = parsed_item.ParsedItem(
         id=job["id"],
         title=job["title"],
-        url=job["urlPath"],
+        url=LINK + job["urlPath"],
         min_salary=s.salary()[0],
         max_salary=s.salary()[1],
         currency=s.currency(),
@@ -58,9 +61,9 @@ def vacancy(job):
         date_of_publication=str(
             datetime.datetime.fromtimestamp(int(job["sortTimeStamp"]) / 1000).strftime('%Y-%m-%d %H:%M:%S'))
     )
-    t += 1
     print(t)
-
+    t += 1
+    data_base.add_cell(parsed_job)
     return parsed_job
 
 
@@ -73,7 +76,7 @@ def find_number_of_vacancies(r):
                 return number_of_vacancies
 
 
-def result(r):
+async def result(r):
     data = response_to_json(r)
     jobs = find_vacancy_catalog(data)
     parsed_jobs = []
@@ -82,20 +85,24 @@ def result(r):
             if job.get("id"):
                 parsed_job = vacancy(job)
                 parsed_jobs.append(parsed_job)
+    await data_base.save_to_excel()
     return parsed_jobs
 
 
 async def parse_page(url):
-    data = None
-    while not data:
-        r = await API.request(url)
-        parsed_jobs = result(r)
-        data = parsed_jobs
-        # print(r.text)
-        if (not data) or (data is None):
-            time.sleep(3)
-    print(url)
-    print("_________________________________________________________________")
+    max_retries = 2
+    retry_delay = 2
+    for retry in range(max_retries):
+        try:
+            r = await API.request(url)
+            parsed_jobs = await result(r)
+            data = parsed_jobs
+            if (not data) or (data is None):
+                await asyncio.sleep(retry_delay)
+            else:
+                return
+        except Exception as e:
+            print(e)
 
 
 async def parse():
@@ -107,3 +114,6 @@ async def parse():
         url = url.replace(f"&p={i - 1}", f"&p={i}")
         tasks.append(url)
     await TaskRunner().run_tasks(parse_page, tasks)
+
+
+
