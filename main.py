@@ -160,16 +160,15 @@ async def startParsing(url):
                     return "Не найдено вакансий"
                 else:
                     for job in jobs:
-                        # if job.get("id"):
+                        if job.get("id"):
                             processJobTokens(job)
 
     tasks = []
     url += "&p=1"
-    for i in range(2, min(8, numberOfJobs//50)):
+    for i in range(2, min(40, numberOfJobs//50)):
         new_url = url.replace(f"&p={i - 1}", f"&p={i}")
         tasks.append(new_url)
-    task_runner = TaskRunner()
-    await task_runner.run_tasks(parse(url), tasks)
+    await TaskRunner().run_tasks(parse, tasks)
 
 class TaskRunner:
     @classmethod
@@ -187,7 +186,7 @@ class TaskRunner:
             async_tasks.append(t)
         await asyncio.gather(*async_tasks)
 async def main():
-    url = "https://www.avito.ru/tatarstan/vakansii?p=53&q=%D1%82%D0%BE%D0%BA%D0%B0%D1%80%D1%8C"
+    url = "https://www.avito.ru/tatarstan/vakansii?&q=%D1%82%D0%BE%D0%BA%D0%B0%D1%80%D1%8C"
     await startParsing(url)
 
 
