@@ -10,6 +10,7 @@ from api import API
 from task_runner import TaskRunner
 from config import LIMIT, url_to_parse
 
+t = 1
 
 def response_to_json(r):
     scripts = HTMLParser(r.text).css('script')
@@ -38,6 +39,7 @@ def find_vacancy_catalog(data):
 
 
 def vacancy(job):
+    global t
     s = vacancy_serializer.VacancySerializer(job)
     parsed_job = parsed_item.ParsedItem(
         id=job["id"],
@@ -56,7 +58,9 @@ def vacancy(job):
         date_of_publication=str(
             datetime.datetime.fromtimestamp(int(job["sortTimeStamp"]) / 1000).strftime('%Y-%m-%d %H:%M:%S'))
     )
-    print(parsed_job)
+    t += 1
+    print(t)
+
     return parsed_job
 
 
@@ -84,16 +88,14 @@ def result(r):
 async def parse_page(url):
     data = None
     while not data:
-        try:
-            r = await API.request(url)
-            parsed_jobs = result(r)
-            data = parsed_jobs
-            # print(r.text)
-            print(url)
-            print("_________________________________________________________________")
-        except:
+        r = await API.request(url)
+        parsed_jobs = result(r)
+        data = parsed_jobs
+        # print(r.text)
+        if (not data) or (data is None):
             time.sleep(3)
-
+    print(url)
+    print("_________________________________________________________________")
 
 
 async def parse():
@@ -101,7 +103,7 @@ async def parse():
     number_of_elements = find_number_of_vacancies(await API.request(url_to_parse))
     tasks = []
     url = url_to_parse + "&p=1"
-    for i in range(2, min(LIMIT, 1 + number_of_elements // 50)):
+    for i in range(2, min(LIMIT, 2 + number_of_elements // 50)):
         url = url.replace(f"&p={i - 1}", f"&p={i}")
         tasks.append(url)
     await TaskRunner().run_tasks(parse_page, tasks)
