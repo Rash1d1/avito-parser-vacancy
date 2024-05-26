@@ -1,6 +1,6 @@
 # import datetime
 import asyncio
-from parser import Parser
+from prsr import parse
 from asyncio import WindowsSelectorEventLoopPolicy
 
 # from curl_cffi.requests import AsyncSession
@@ -190,8 +190,7 @@ asyncio.set_event_loop_policy(WindowsSelectorEventLoopPolicy())
 #             async_tasks.append(t)
 #         await asyncio.gather(*async_tasks)
 async def main():
-    parser = Parser()
-    await parser.parse()
+    await parse()
 
 if __name__ == '__main__':
     asyncio.run(main())

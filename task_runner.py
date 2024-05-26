@@ -4,7 +4,7 @@ import asyncio
 class TaskRunner:
     @classmethod
     async def run_tasks(cls, func, tasks):
-        sem = asyncio.Semaphore(10)
+        sem = asyncio.Semaphore(4)
         async_tasks = []
 
         async def task_wrapper(t):
