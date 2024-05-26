@@ -165,15 +165,15 @@ async def startParsing(url):
 
     tasks = []
     url += "&p=1"
-    for i in range(2, min(40, numberOfJobs//50)):
-        new_url = url.replace(f"&p={i - 1}", f"&p={i}")
-        tasks.append(new_url)
+    for i in range(2, min(80, numberOfJobs//50)):
+        url = url.replace(f"&p={i - 1}", f"&p={i}")
+        tasks.append(url)
     await TaskRunner().run_tasks(parse, tasks)
 
 class TaskRunner:
     @classmethod
     async def run_tasks(cls, func, tasks):
-        sem = asyncio.Semaphore(6)
+        sem = asyncio.Semaphore(10)
         async_tasks = []
         async def task_wrapper(t):
             async with sem:
