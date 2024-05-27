@@ -1,5 +1,5 @@
 import unicodedata
-from config import LINK
+from config import Config
 
 class VacancySerializer:
 
@@ -80,7 +80,7 @@ class VacancySerializer:
 
     def employer_link(self):
         try:
-            return LINK + str(self.data["iva"]["UserInfoStep"][0]["payload"]["profile"]["link"])
+            return Config.LINK + str(self.data["iva"]["UserInfoStep"][0]["payload"]["profile"]["link"])
         except:
             return None
 

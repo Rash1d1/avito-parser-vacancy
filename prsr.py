@@ -1,6 +1,6 @@
 import asyncio
 import datetime
-from excel_storage import DbExcelJobs
+from excel_storage import ExcelStorage
 from selectolax.parser import HTMLParser
 from urllib.parse import unquote
 import json
@@ -8,9 +8,9 @@ import vacancy_serializer
 import parsed_item
 from api import API
 from task_runner import TaskRunner
-from config import LIMIT, url_to_parse, LINK
+from config import Config
 
-data_base = DbExcelJobs("DB.xlsx")
+data_base = ExcelStorage(Config.location_of_result_file)
 t = 1
 
 
@@ -47,7 +47,7 @@ def vacancy(job):
     parsed_job = parsed_item.ParsedItem(
         id=job["id"],
         title=job["title"],
-        url=LINK + job["urlPath"],
+        url=Config.LINK + job["urlPath"],
         min_salary=s.salary()[0],
         max_salary=s.salary()[1],
         currency=s.currency(),
@@ -106,11 +106,11 @@ async def parse_page(url):
 
 
 async def parse():
-    await parse_page(url_to_parse)
-    number_of_elements = find_number_of_vacancies(await API.request(url_to_parse))
+    await parse_page(Config.url_to_parse)
+    number_of_elements = find_number_of_vacancies(await API.request(Config.url_to_parse))
     tasks = []
-    url = url_to_parse + "&p=1"
-    for i in range(2, min(LIMIT, 2 + number_of_elements // 50)):
+    url = Config.url_to_parse + "&p=1"
+    for i in range(2, min(Config.LIMIT, 2 + number_of_elements // 50)):
         url = url.replace(f"&p={i - 1}", f"&p={i}")
         tasks.append(url)
     await TaskRunner().run_tasks(parse_page, tasks)

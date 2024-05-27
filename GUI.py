@@ -1,46 +1,47 @@
-import tkinter as tk
-from tkinter import messagebox
-from tkinter import ttk
+from customtkinter import *
+from config import Config
+
+cfg = Config()
 
 
-class VacancyParserGUI:
-    def __init__(self, root):
-        self.root = root
-        self.root.title("Парсер вакансий")
-        self.screen_width = self.root.winfo_screenwidth()
-        self.screen_height = self.root.winfo_screenheight()
+class ParserGUI:
+    def __init__(self):
+        self.app = CTk()
+        self.app.geometry("600x500")
+        set_appearance_mode("dark")
+        set_default_color_theme("blue")
+        CTkLabel(master=self.app, text="Парсер Авито", fg_color="transparent", font=("Arial", 20),
+                 text_color="#F5F5F5").pack(pady=50, padx=20)
+        self.url_entry = CTkEntry(master=self.app, width=400,
+                                  placeholder_text="Введите url первой страницы для парсинга",
+                                  border_width=1, border_color="#F5F5F5", text_color="#F5F5F5")
+        self.url_entry.pack(pady=5, padx=20)
+        self.insert_url_button = CTkButton(master=self.app, text="Вставить url из буфера", command=self.url_button_event(),
+                  border_width=1, text_color="#F5F5F5")
+        self.insert_url_button.pack(padx=20, pady=5)
+        self.path_entry = CTkEntry(master=self.app, width=300,
+                                   placeholder_text="Введите имя файла для выгрузки результата парсинга",
+                                   border_width=1, border_color="#F5F5F5", text_color="#F5F5F5")
+        self.path_entry.pack(pady=39, padx=10)
+        self.parse_button = CTkButton(master=self.app, text="Выгрузить", command=self.parse_button_event(),
+                  border_width=1, text_color="#F5F5F5")
+        self.parse_button.pack(padx=20, pady=5)
 
-        self.root.geometry(f"{int(self.screen_width * 0.8)}x{int(self.screen_height * 0.8)}")
-        self.create_widgets()
+        CTkProgressBar(master=self.app, width=400).pack(pady=10, padx=5)
 
-    def create_widgets(self):
-        self.url_label = tk.Label(self.root, text="URL:")
-        self.url_label.pack(pady=10)
 
-        self.url_entry = tk.Entry(self.root)
-        self.url_entry.pack(pady=5, fill=tk.X)
 
-        self.check_button = tk.Button(self.root, text="Проверить количество найденных вакансий",
-                                      command=self.check_vacancy_count)
-        self.check_button.pack(pady=10, fill=tk.X)
 
-        self.output_label = tk.Label(self.root, text="Имя файла для выгрузки данных:")
-        self.output_label.pack(pady=10)
+    def url_button_event(self):
+        pass
 
-        self.output_entry = tk.Entry(self.root)
-        self.output_entry.pack(pady=5, fill=tk.X)
-
-        self.export_button = tk.Button(self.root, text="Выгрузить", command=self.export_data)
-        self.export_button.pack(pady=10, fill=tk.X)
-
-        self.progressbar = ttk.Progressbar(self.root, orient="horizontal", length=int(self.screen_width * 0.6),
-                                           mode="determinate")
-        self.progressbar.pack(pady=20, fill=tk.X)
-    def check_vacancy_count(self):
-        messagebox.showinfo("Information", "Implement logic to check the number of found vacancies")
-
-    def export_data(self):
-        messagebox.showinfo("Information", "Implement logic to export data")
+    def parse_button_event(self):
+        print(3)
+        if self.path_entry == "":
+            print(True)
+        else:
+            cfg.set_url_to_parse(self.url_entry.get())
+            cfg.set_location_of_result_file(self.path_entry.get())
 
     def run(self):
-        self.root.mainloop()
+        self.app.mainloop()

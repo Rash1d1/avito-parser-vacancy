@@ -1,7 +1,7 @@
 import os.path
 from openpyxl import Workbook
 import pandas as pd
-class DbExcelJobs:
+class ExcelStorage:
     headers = {
         'id': 'id',
         'title': 'Название',
