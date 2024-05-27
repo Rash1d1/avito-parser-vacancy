@@ -8,7 +8,7 @@ import vacancy_serializer
 import parsed_item
 from api import API
 from task_runner import TaskRunner
-from config import Config
+# p
 
 data_base = None
 t = 1
@@ -47,7 +47,7 @@ def vacancy(job):
     parsed_job = parsed_item.ParsedItem(
         id=job["id"],
         title=job["title"],
-        url=Config.LINK + job["urlPath"],
+        url="https://www.avito.ru" + job["urlPath"],
         min_salary=s.salary()[0],
         max_salary=s.salary()[1],
         currency=s.currency(),
@@ -61,18 +61,19 @@ def vacancy(job):
         date_of_publication=str(
             datetime.datetime.fromtimestamp(int(job["sortTimeStamp"]) / 1000).strftime('%Y-%m-%d %H:%M:%S'))
     )
-    print(t)
+    print(t, parsed_job)
     t += 1
     data_base.add_cell(parsed_job)
     return parsed_job
 
 
-def find_number_of_vacancies(r):
+async def find_number_of_vacancies(url):
+    r = await API.request(url)
     data = response_to_json(r)
     if data is not None:
         for key in data:
             if "single-page" in key:
-                number_of_vacancies = data[key]["data"]["totalCount"]
+                number_of_vacancies = data[key]["data"]["mainCount"]
                 return number_of_vacancies
 
 
@@ -105,18 +106,18 @@ async def parse_page(url):
             print(e)
 
 
-async def parse():
-    await parse_page(Config.url_to_parse)
+async def parse(cfg):
+    await parse_page(cfg.url_to_parse)
     #number_of_elements = find_number_of_vacancies(await API.request(Config.url_to_parse))
     tasks = []
-    url = Config.url_to_parse + "&p=1"
-    for i in range(2, min(Config.LIMIT, 2 + number_of_elements // 50)):
+    url = cfg.url_to_parse + "&p=1"
+    for i in range(2, min(cfg.LIMIT, 2 + cfg.found_items_number // 50)):
         url = url.replace(f"&p={i - 1}", f"&p={i}")
         tasks.append(url)
     await TaskRunner().run_tasks(parse_page, tasks)
 
 
-async def start_parsing():
+async def start_parsing(cfg):
     global data_base
-    data_base = ExcelStorage(Config.location_of_result_file)
-    await parse()
+    data_base = ExcelStorage(cfg.location_of_result_file)
+    await parse(cfg)

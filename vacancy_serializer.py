@@ -1,6 +1,6 @@
 import unicodedata
 from config import Config
-
+# p
 class VacancySerializer:
 
     def __init__(self, job_data):
