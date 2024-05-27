@@ -1,8 +1,8 @@
 import os
+
 from loguru import logger
 
-logger.add("out.log", format="{time}, {level} {message}", level="DEBUG")
-
+logger.add("out.log", mode="{time}, {level}, {message}", level="DEBUG")
 
 class Config:
     url_to_parse = ""

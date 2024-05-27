@@ -8,11 +8,21 @@ import vacancy_serializer
 import parsed_item
 from api import API
 from task_runner import TaskRunner
-from config import logger
-# p
 
+
+app = None
 data_base = None
 t = 1
+
+
+class ParserState:
+    number_of_items = 0
+
+    def find_number_of_items(self, url):
+        self.number_of_items = find_number_of_vacancies(url)
+
+
+parser_state = ParserState()
 
 
 def response_to_json(r):
@@ -62,14 +72,14 @@ def vacancy(job):
         date_of_publication=str(
             datetime.datetime.fromtimestamp(int(job["sortTimeStamp"]) / 1000).strftime('%Y-%m-%d %H:%M:%S'))
     )
-    print(t, parsed_job)
     t += 1
+    print(t, parsed_job)
     data_base.add_cell(parsed_job)
     return parsed_job
 
 
-async def find_number_of_vacancies(url):
-    r = await API.request(url)
+def find_number_of_vacancies(url):
+    r = API.synchronic_request(url)
     data = response_to_json(r)
     if data is not None:
         for key in data:
@@ -79,6 +89,8 @@ async def find_number_of_vacancies(url):
 
 
 async def result(r):
+    global t
+    global app
     data = response_to_json(r)
     jobs = find_vacancy_catalog(data)
     parsed_jobs = []
@@ -88,6 +100,9 @@ async def result(r):
                 parsed_job = vacancy(job)
                 parsed_jobs.append(parsed_job)
     await data_base.save_to_excel()
+    app.move_progress(t)
+    app.app.update()
+
     return parsed_jobs
 
 
@@ -104,12 +119,18 @@ async def parse_page(url):
             else:
                 return
         except Exception as e:
-            print(e)
+            raise e
 
-async def parse(cfg):
+
+async def parse(cfg, app_):
+    global app
     global data_base
+    global t
+    global parser_state
+    app = app_
+    parser_state.find_number_of_items(cfg.url_to_parse)
     data_base = ExcelStorage(cfg.location_of_result_file)
-    num = await find_number_of_vacancies(cfg.url_to_parse)
+    num = parser_state.number_of_items
     await parse_page(cfg.url_to_parse)
     tasks = []
     url = cfg.url_to_parse + "&p=1"
@@ -117,7 +138,4 @@ async def parse(cfg):
         url = url.replace(f"&p={i - 1}", f"&p={i}")
         tasks.append(url)
     await TaskRunner().run_tasks(parse_page, tasks)
-
-
-
-
+    print(t)

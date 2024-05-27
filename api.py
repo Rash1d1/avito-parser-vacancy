@@ -1,6 +1,7 @@
 from config import Config
 from curl_cffi.requests import AsyncSession
-from config import logger
+from curl_cffi import requests 
+
 
 s = AsyncSession()
 
@@ -11,4 +12,9 @@ class API:
         # proxies_used = proxies - in case proxies will be used instead of scrapperAPI
         payload = {"api_key": Config.scrapper_api, "url": url}
         r = await s.get('https://api.scraperapi.com', params=payload)
+        return r
+    @classmethod
+    def synchronic_request(cls, url):
+        payload = {"api_key": Config.scrapper_api, "url": url}
+        r = requests.get('https://api.scraperapi.com', params=payload)
         return r

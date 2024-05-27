@@ -1,20 +1,19 @@
 import asyncio
-from prsr import parse, find_number_of_vacancies
+from prsr import parse, find_number_of_vacancies, parser_state
 from customtkinter import *
 from config import Config
 import pyperclip
 from tkinter import messagebox
 from config import logger
+from threading import Thread
 
-# p
 
 cfg = Config()
-
 
 class ParserGUI:
     def __init__(self):
         self.app = CTk()
-        self.app.geometry("600x500")
+        self.app.geometry("600x550")
         set_appearance_mode("dark")
         set_default_color_theme("blue")
         CTkLabel(master=self.app, text="Парсер Авито", fg_color="transparent", font=("Arial", 20),
@@ -45,27 +44,27 @@ class ParserGUI:
                                       border_width=1, text_color="#F5F5F5")
         self.parse_button.pack(padx=20, pady=5)
 
-        self.progressbar = CTkProgressBar(master=self.app, width=400).pack(pady=10, padx=5)
+        self.progressbar = CTkProgressBar(master=self.app, width=400)
+        self.progressbar.pack(pady=10, padx=5)
+        self.progressbar.set(0)
+        self.progress_label = CTkLabel(master=self.app, text="Прогресс: _")
+        self.progress_label.pack(pady=3, padx=5)
 
-        self.loop = asyncio.new_event_loop()
+    def process_url(self):
+        try:
+            cfg.set_url_to_parse(self.url_entry.get())
+            n = find_number_of_vacancies(cfg.url_to_parse)
+            self.number_of_elems_label.configure(
+                text=f"Кол-во элементов: {n}. Кол-во страниц: {min(n // 50 + 1, 100)}")
+        except Exception as e:
+            messagebox.showinfo("Ошибка", "Произошла ошибка при обработке URL")
 
     @logger.catch()
     def number_of_elems_button_event(self):
         if self.url_entry.get() == "":
-            messagebox.showinfo("Ошибка", "Введите url!")
+            messagebox.showinfo("Ошибка", "Введите URL!")
         else:
-            try:
-                cfg.set_url_to_parse(self.url_entry.get())
-                async def process_url():
-                    n = await find_number_of_vacancies(cfg.url_to_parse)
-                    self.number_of_elems_label.configure(
-                        text=f"Кол-во элементов: {n}. Кол-во страниц: {min(n // 50 + 1, 100)}")
-
-                # Create and run an event loop to execute the asynchronous function
-                self.loop.run_until_complete(process_url())
-                self.loop.stop()
-            except Exception as e:
-                messagebox.showinfo("Ошибка", "Введен не валидный url")
+            self.process_url()
 
     @logger.catch()
     def url_button_event(self):
@@ -75,12 +74,23 @@ class ParserGUI:
     def parse_button_event(self):
         if self.path_entry.get() == "":
             messagebox.showinfo("Ошибка", "Введите имя файла для выгрузки результата!")
+        elif self.url_entry.get() == "":
+            messagebox.showinfo("Ошибка", "Введите URL!")
         else:
             cfg.set_url_to_parse(self.url_entry.get())
             cfg.set_location_of_result_file(self.path_entry.get())
-            asyncio.run(parse(cfg))
+            thread = Thread(target=asyncio.run(parse(cfg, self)), daemon=True)
+            thread.start()
+            self.move_progress(parser_state.number_of_items)
+            self.progress_label.configure(text=f"Завершено")
             messagebox.showinfo("Успех", str(Config.location_of_result_file))
 
+    def move_progress(self, i):
+        self.progressbar.set(i / min(cfg.limit*50, parser_state.number_of_items))
+        self.progress_label.configure(
+            text=f"Завершено на {round(i / min(cfg.limit*50, parser_state.number_of_items) * 100, 1)}%")
     @logger.catch()
     def run(self):
         self.app.mainloop()
+
+
