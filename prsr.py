@@ -10,7 +10,7 @@ from api import API
 from task_runner import TaskRunner
 from config import Config
 
-data_base = ExcelStorage(Config.location_of_result_file)
+data_base = None
 t = 1
 
 
@@ -107,7 +107,7 @@ async def parse_page(url):
 
 async def parse():
     await parse_page(Config.url_to_parse)
-    number_of_elements = find_number_of_vacancies(await API.request(Config.url_to_parse))
+    #number_of_elements = find_number_of_vacancies(await API.request(Config.url_to_parse))
     tasks = []
     url = Config.url_to_parse + "&p=1"
     for i in range(2, min(Config.LIMIT, 2 + number_of_elements // 50)):
@@ -116,4 +116,7 @@ async def parse():
     await TaskRunner().run_tasks(parse_page, tasks)
 
 
-
+async def start_parsing():
+    global data_base
+    data_base = ExcelStorage(Config.location_of_result_file)
+    await parse()
