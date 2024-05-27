@@ -8,6 +8,7 @@ import vacancy_serializer
 import parsed_item
 from api import API
 from task_runner import TaskRunner
+from config import logger
 # p
 
 data_base = None
@@ -105,19 +106,18 @@ async def parse_page(url):
         except Exception as e:
             print(e)
 
-
 async def parse(cfg):
+    global data_base
+    data_base = ExcelStorage(cfg.location_of_result_file)
+    num = await find_number_of_vacancies(cfg.url_to_parse)
     await parse_page(cfg.url_to_parse)
-    #number_of_elements = find_number_of_vacancies(await API.request(Config.url_to_parse))
     tasks = []
     url = cfg.url_to_parse + "&p=1"
-    for i in range(2, min(cfg.LIMIT, 2 + cfg.found_items_number // 50)):
+    for i in range(2, min(cfg.limit + 1, 2 + num // 50)):
         url = url.replace(f"&p={i - 1}", f"&p={i}")
         tasks.append(url)
     await TaskRunner().run_tasks(parse_page, tasks)
 
 
-async def start_parsing(cfg):
-    global data_base
-    data_base = ExcelStorage(cfg.location_of_result_file)
-    await parse(cfg)
+
+

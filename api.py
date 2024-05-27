@@ -1,6 +1,7 @@
 from config import Config
 from curl_cffi.requests import AsyncSession
-# p
+from config import logger
+
 s = AsyncSession()
 
 

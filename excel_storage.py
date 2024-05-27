@@ -2,6 +2,7 @@ import os.path
 from openpyxl import Workbook
 import pandas as pd
 from tkinter import messagebox
+from config import logger
 # p
 class ExcelStorage:
     headers = {
@@ -21,7 +22,7 @@ class ExcelStorage:
         'date_of_publication': 'Дата публикации'
     }
     row_in_table = 2
-
+    @logger.catch()
     def __init__(self, file_name):
         self.file_name = file_name
         self.data = []
@@ -37,9 +38,11 @@ class ExcelStorage:
         except:
             messagebox.showinfo("Ошибка", "Выбрано не валидное имя файла")
 
+    @logger.catch()
     def add_cell(self, parsed_item):
         self.data.append({header: getattr(parsed_item, attribute_name, '') for attribute_name, header in self.headers.items()})
 
+    @logger.catch()
     async def save_to_excel(self):
         df = pd.DataFrame(self.data)
         writer = pd.ExcelWriter(self.file_name, engine='openpyxl')
