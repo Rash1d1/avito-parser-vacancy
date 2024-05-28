@@ -1,0 +1,76 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>URL and Page Limit Form</title>
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</head>
+<body>
+    <div class="container mt-5">
+        <h2 class="text-center">Парсер Авито</h2>
+        <form id="urlForm" method="POST" action="/pages/base" onsubmit=submitForm()>
+            <div class="form-group">
+                <label for="urlInput">URL</label>
+                <div class="input-group">
+                    <input type="url" class="form-control" id="urlInput" name="url" placeholder="Введите url" required>
+                    <div class="input-group-append">
+                        <button type="button" class="btn btn-secondary" onclick="pasteFromClipboard()">Вставить из буфера</button>
+                    </div>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="pageLimitInput">Лимит страниц</label>
+                <input type="number" class="form-control" id="pageLimitInput" name="pageLimit" placeholder="Введите макс. кол-во страниц для парсинга" required>
+            </div>
+            <button type="button" class="btn btn-primary" onclick="submitForm()">Начать</button>
+        </form>
+    </div>
+
+    <script>
+        function pasteFromClipboard() {
+            navigator.clipboard.readText().then(
+                clipText => document.getElementById("urlInput").value = clipText);
+        }
+
+        async function submitForm() {
+            const url = document.getElementById('urlInput').value;
+            const pageLimit = document.getElementById('pageLimitInput').value;
+
+            if (url && pageLimit) {
+                const data = {
+                    url: url,
+                    pageLimit: parseInt(pageResult)
+                };
+
+                try {
+                    const response = await fetch('/pages/base', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(data)
+                    });
+
+                    if (response.ok) {
+                        const blob = await response.blob();
+                        const url = window.URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = 'file.xlsx';
+                        a.click();
+                    } else {
+                        console.error('Server returned an error status:', response.status);
+                    }
+                } catch (error) {
+                    console.error('Error sending request:', error);
+                }
+            } else {
+                alert('Please fill out all fields.');
+            }
+        }
+    </script>
+</body>
+</html>
