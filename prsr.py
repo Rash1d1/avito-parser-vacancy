@@ -36,8 +36,9 @@ def response_to_json(r):
             json_text = unquote(json_text)
             json_text = json_text[1:-1]
             data = json.loads(json_text)
+            return data
 
-    return data
+
 
 
 def find_vacancy_catalog(data):
@@ -72,20 +73,29 @@ def vacancy(job):
         date_of_publication=str(
             datetime.datetime.fromtimestamp(int(job["sortTimeStamp"]) / 1000).strftime('%Y-%m-%d %H:%M:%S'))
     )
-    t += 1
-    print(t, parsed_job)
-    data_base.add_cell(parsed_job)
-    return parsed_job
+    if not(parsed_job.min_salary == "" and  parsed_job.max_salary == ""):
+        t += 1
+        print(t, parsed_job)
+        data_base.add_cell(parsed_job)
+        return parsed_job
+
 
 
 def find_number_of_vacancies(url):
-    r = API.synchronic_request(url)
-    data = response_to_json(r)
-    if data is not None:
-        for key in data:
-            if "single-page" in key:
-                number_of_vacancies = data[key]["data"]["mainCount"]
-                return number_of_vacancies
+    data = None
+    retry = 0
+    while data is None:
+        if retry == 3:
+            print("Неудача при попытке обратиться к серверу")
+            exit(1)
+        r = API.synchronic_request(url)
+        data = response_to_json(r)
+        if data is not None:
+            for key in data:
+                if "single-page" in key:
+                    number_of_vacancies = data[key]["data"]["mainCount"]
+                    return number_of_vacancies
+        retry+=1
 
 
 async def result(r):
@@ -101,8 +111,6 @@ async def result(r):
                 parsed_jobs.append(parsed_job)
     await data_base.save_to_excel()
     app.move_progress(t)
-    app.app.update()
-
     return parsed_jobs
 
 
@@ -111,15 +119,22 @@ async def parse_page(url):
     retry_delay = 2
     for retry in range(max_retries):
         try:
+            r = None
             r = await API.request(url)
             parsed_jobs = await result(r)
             data = parsed_jobs
             if (not data) or (data is None):
                 await asyncio.sleep(retry_delay)
             else:
+                print("---------------------------")
+                print(url, "was parsed")
+                print("---------------------------")
                 return
         except Exception as e:
-            raise e
+            print(e)
+            print(r.text)
+            print(f"Try {retry+1} was unsuccessful, one more time...")
+            await asyncio.sleep(retry_delay)
 
 
 async def parse(cfg, app_):

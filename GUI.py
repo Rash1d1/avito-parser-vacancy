@@ -57,6 +57,7 @@ class ParserGUI:
             self.number_of_elems_label.configure(
                 text=f"Кол-во элементов: {n}. Кол-во страниц: {min(n // 50 + 1, 100)}")
         except Exception as e:
+            print(e)
             messagebox.showinfo("Ошибка", "Произошла ошибка при обработке URL")
 
     @logger.catch()
@@ -89,6 +90,7 @@ class ParserGUI:
         self.progressbar.set(i / min(cfg.limit*50, parser_state.number_of_items))
         self.progress_label.configure(
             text=f"Завершено на {round(i / min(cfg.limit*50, parser_state.number_of_items) * 100, 1)}%")
+        self.app.update()
     @logger.catch()
     def run(self):
         self.app.mainloop()

@@ -1,13 +1,12 @@
 import asyncio
-from config import logger
 
+# to gather async tasks
 class TaskRunner:
     @classmethod
-    @logger.catch()
     async def run_tasks(cls, func, tasks):
         sem = asyncio.Semaphore(4)
         async_tasks = []
-        @logger.catch()
+
         async def task_wrapper(t):
             async with sem:
                 try:
