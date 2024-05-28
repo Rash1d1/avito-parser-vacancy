@@ -5,7 +5,6 @@ from config import Config
 import pyperclip
 from tkinter import messagebox
 from config import logger
-from threading import Thread
 from excel_storage import ExcelStorage
 
 cfg = Config()
