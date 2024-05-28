@@ -102,8 +102,7 @@ class ParserGUI:
 
             state = ParserState(self.url_entry.get())
             p = Parser(cfg, storage, state, progress_callback=move_progress)
-            thread = Thread(target=asyncio.run(p.parse()), daemon=True)
-            thread.start()
+            asyncio.get_event_loop().run_until_complete(p.parse())
             self.progressbar.set(1)
             self.progress_label.configure(
                 text=f"Завершено на 100%")

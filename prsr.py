@@ -85,8 +85,8 @@ class Parser:
                 datetime.datetime.fromtimestamp(int(item["sortTimeStamp"]) / 1000).strftime('%Y-%m-%d %H:%M:%S'))
         )
         if not (parsed_job.min_salary == "" and parsed_job.max_salary == ""):
-            self.number_of_parsed_items += 1
             print(self.number_of_parsed_items, parsed_job)
+            self.number_of_parsed_items += 1
             self.data_storage.add_cell(parsed_job)
             if self.progress_callback is not None:
                 self.progress_callback(self.number_of_parsed_items)
