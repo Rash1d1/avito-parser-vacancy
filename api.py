@@ -9,12 +9,13 @@ s = AsyncSession()
 class API:
     @classmethod
     async def request(cls, url):
-        # # proxies_used = proxies - in case proxies will be used instead of scrapperAPI
-        # payload = {"api_key": Config.scrapper_api, "url": url}
-        r = await s.get(url, proxies=Config.proxies)
+        payload = {"api_key": Config.scrapper_api, "url": url}
+        r = await s.get("https://api.scraperapi.com", params=payload)
+        #r = await s.get(url, proxies=Config.proxies, impersonate="chrome101")
         return r
     @classmethod
     def synchronic_request(cls, url):
-        # payload = {"api_key": Config.scrapper_api, "url": url}
-        r = requests.get(url, proxies=Config.proxies)
+        payload = {"api_key": Config.scrapper_api, "url": url}
+        r = requests.get("https://api.scraperapi.com", params=payload)
+        #r = requests.get(url, proxies=Config.proxies, impersonate="chrome101")
         return r

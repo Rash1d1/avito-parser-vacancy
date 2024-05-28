@@ -10,8 +10,8 @@ class Config:
     limit = 80
     location_of_result_file = ""
     proxies = {
-        "https": "http://IKbS7Ni7cn:IMSO7V1FP9@51.15.15.230:10318",
-        "http": "http://IKbS7Ni7cn:IMSO7V1FP9@51.15.15.230:10318"
+        "https": "http://lte1:MIoQTQVFvO@65.21.29.211:50408",
+        "http": "http://lte1:MIoQTQVFvO@65.21.29.211:50408"
     }
     def set_url_to_parse(self, url):
         self.url_to_parse = url
