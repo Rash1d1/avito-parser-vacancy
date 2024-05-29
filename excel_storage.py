@@ -44,7 +44,7 @@ class ExcelStorage:
         self.data.append({header: getattr(parsed_item, attribute_name, '') for attribute_name, header in self.headers.items()})
 
     @logger.catch()
-    async def save_to_excel(self):
+    def save_to_excel(self):
         df = pd.DataFrame(self.data)
         writer = pd.ExcelWriter(self.file_name, engine='openpyxl')
         df.to_excel(writer, sheet_name='Sheet1', index=False)

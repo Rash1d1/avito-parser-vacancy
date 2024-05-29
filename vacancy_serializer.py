@@ -8,7 +8,7 @@ class VacancySerializer:
 
     def salary(self):
         try:
-            min_max_arr = [None, None]
+            min_max_arr = [0, 0]
             salary_string = self.data["priceDetailed"]["fullString"]
             if "до" in salary_string:
                 digits_only = ''.join(filter(str.isdigit, salary_string))
@@ -20,9 +20,12 @@ class VacancySerializer:
                 from_to_digits = salary_string.split("—")
                 min_max_arr[0] = "".join(filter(str.isdigit, from_to_digits[0]))
                 min_max_arr[1] = "".join(filter(str.isdigit, from_to_digits[1]))
+            elif "Зарплата не указана" not in salary_string:
+                min_max_arr[0] = "".join(filter(str.isdigit, salary_string))
+                min_max_arr[1] = "".join(filter(str.isdigit, salary_string))
             return min_max_arr
         except Exception as e:
-            return None
+            return [0, 0]
 
     def currency(self):
         try:

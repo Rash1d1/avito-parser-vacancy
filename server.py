@@ -55,6 +55,9 @@ def get_result():
                                 media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
 
             response.headers['Content-Disposition'] = 'attachment; filename=file.xlsx'
+            response.headers['parsed'] = str(state_.number_of_parsed_items)
+            response.headers['total'] = str(state_.number_of_items)
+            result = False
             return response
     else:
         response = Response(status_code=204)

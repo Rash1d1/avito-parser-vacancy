@@ -84,16 +84,18 @@ class Parser:
             date_of_publication=str(
                 datetime.datetime.fromtimestamp(int(item["sortTimeStamp"]) / 1000).strftime('%Y-%m-%d %H:%M:%S'))
         )
-        if not ((parsed_job.min_salary is None) and (parsed_job.max_salary is None)):
-            print(self.number_of_parsed_items)
+        if not ((parsed_job.min_salary == 0) and (parsed_job.max_salary == 0)):
+            print(self.number_of_parsed_items, parsed_job)
             self.number_of_parsed_items += 1
             self.data_storage.add_cell(parsed_job)
             if self.progress_callback is not None:
                 self.progress_callback(self.number_of_parsed_items)
             return parsed_job
 
-    async def result(self, r):
+    def result(self, r):
         data = self.response_to_json(r)
+        # with open("data.json", "w", encoding='utf=8') as file:
+        #     json.dump(data, file, ensure_ascii=False, indent=4)
         items = self.find_catalog(data)
         parsed_jobs = []
         if isinstance(items, list):
@@ -101,18 +103,18 @@ class Parser:
                 if item.get("id"):
                     parsed_item = self.process(item)
                     parsed_jobs.append(parsed_item)
-        await self.data_storage.save_to_excel()
+        self.data_storage.save_to_excel()
         # app.move_progress(t)
         return parsed_jobs
 
     async def parse_page(self, url):
-        max_retries = 2
-        retry_delay = 2
+        max_retries = 10
+        retry_delay = 3
         for retry in range(max_retries):
             r = None
             try:
                 r = await API.request(url)
-                parsed_items = await self.result(r)
+                parsed_items = self.result(r)
                 data = parsed_items
                 if (not data) or (data is None):
                     await asyncio.sleep(retry_delay)
@@ -120,7 +122,6 @@ class Parser:
                     return
             except Exception as e:
                 print(e)
-                print(r.text)
                 print(f"Try {retry + 1} was unsuccessful, one more time...")
                 await asyncio.sleep(retry_delay)
 

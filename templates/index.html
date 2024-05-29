@@ -37,7 +37,7 @@
         <div class="form-group">
             <label for="pageLimitInput">Лимит страниц</label>
             <input type="number" class="form-control" id="pageLimitInput" name="pageLimit"
-                   placeholder="Введите макс. кол-во страниц для парсинга" required>
+                   placeholder="Введите макс. кол-во страниц для парсинга" required value="80">
         </div>
         <button type="button" class="btn btn-primary" onclick="submitForm()">Начать</button>
         <div class="progress" style="height: 30px;">
@@ -55,8 +55,14 @@
     }
 
     const BASE_URL = ""
-    let parsedAds;
-    let message;
+    let message = document.createElement('p');
+    document.querySelector('.container').appendChild(message);
+    let totalAds = document.createElement('p');
+    totalAds.textContent = `Предварительное общее число обьявлений: ${0}`;
+    document.querySelector('.container').appendChild(totalAds);
+    let parsedAds = document.createElement('p');
+    parsedAds.textContent = `Обработано: ${0}`;
+    document.querySelector('.container').appendChild(parsedAds);
     async function checkResult() {
         while (true) {
             const r = await fetch(BASE_URL + "/result");
@@ -74,32 +80,42 @@
             } else {
                 document.getElementById("progressBar").style.width = `100%`;
                 document.getElementById("progressBar").setAttribute("aria-valuenow", 100);
+                const parsed = parseInt(r.headers.get('parsed'));
+                parsedAds.textContent = `Загружено: ${parsed}`;
                 message.textContent = "Парсинг завершен!"
+
                 const blob = await r.blob();
                 const url = window.URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
                 a.download = 'file.xlsx';
                 a.click();
+                isSubmitting = false; // Reset form submission state
                 return
             }
         }
     }
-
+    let isSubmitting = false;
     async function submitForm() {
+        if (isSubmitting) {
+            return; // If form is already being submitted, prevent further submissions
+        }
+        isSubmitting = true;
         const url = document.getElementById('urlInput').value;
         const pageLimit = document.getElementById('pageLimitInput').value;
 
         if (url && pageLimit) {
-            message = document.createElement('p');
             message.textContent = 'Парсинг начался, пожалуйста, не начинайте новый, пока процесс не завершится...';
-            document.querySelector('.container').appendChild(message);
+            document.getElementById("progressBar").style.width = `0%`;
+            document.getElementById("progressBar").setAttribute("aria-valuenow", 0);
             const data = {
                 url: url,
                 pageLimit: parseInt(pageLimit)
             };
 
             try {
+                totalAds.textContent = 'Предварительное общее число обьявлений: Вычисляется...';
+                parsedAds.textContent = `Обработано: ${0}`;
                 const response = fetch('/parse', {
                     method: 'POST',
                     headers: {
@@ -107,20 +123,18 @@
                     },
                     body: JSON.stringify(data)
                 });
-                await new Promise(resolve => setTimeout(resolve, 10000));
+                await new Promise(resolve => setTimeout(resolve, 5000));
 
                 const r = await fetch(BASE_URL + "/result");
                 const total = parseInt(r.headers.get('total'));
 
                 // Display the total number of ads
-                const totalAds = document.createElement('p');
-                totalAds.textContent = `Предварительное общее число обьявлений: ${total}`;
-                document.querySelector('.container').appendChild(totalAds);
 
-                parsedAds = document.createElement('p');
+                totalAds.textContent = `Предварительное общее число обьявлений: ${total}`;
                 parsedAds.textContent = `Обработано: ${0}`;
-                document.querySelector('.container').appendChild(parsedAds);
+
                 await checkResult();
+
 
             } catch (error) {
                 console.error('Error sending request:', error);
