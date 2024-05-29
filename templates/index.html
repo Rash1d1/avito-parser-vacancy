@@ -53,6 +53,9 @@
                         },
                         body: JSON.stringify(data)
                     });
+                    if (response.status === 502) {
+                        await submitForm()
+                    }
 
                     if (response.ok) {
                         const blob = await response.blob();

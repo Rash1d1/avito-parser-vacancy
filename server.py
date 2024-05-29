@@ -5,6 +5,7 @@ app = FastAPI(title = "DemoParser")
 
 app.include_router(router_page)
 
+#uvicorn server:app --reload
 
 @app.get("/")
 def hello():
