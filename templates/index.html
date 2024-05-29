@@ -9,71 +9,119 @@
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 </head>
 <body>
-    <div class="container mt-5">
-        <h2 class="text-center">Парсер Авито</h2>
-        <form id="urlForm" method="POST" action="/pages/base" onsubmit=submitForm()>
-            <div class="form-group">
-                <label for="urlInput">URL</label>
-                <div class="input-group">
-                    <input type="url" class="form-control" id="urlInput" name="url" placeholder="Введите url" required>
-                    <div class="input-group-append">
-                        <button type="button" class="btn btn-secondary" onclick="pasteFromClipboard()">Вставить из буфера</button>
-                    </div>
+<div class="container mt-5">
+    <h2 class="text-center">Парсер Авито</h2>
+    <form id="urlForm" method="POST" action="/pages/base" onsubmit=submitForm()>
+        <div class="form-group">
+            <label for="urlInput">URL</label>
+            <div class="input-group">
+                <input type="url" class="form-control" id="urlInput" name="url" placeholder="Введите url" required>
+                <div class="input-group-append">
+                    <button type="button" class="btn btn-secondary" onclick="pasteFromClipboard()">Вставить из буфера
+                    </button>
                 </div>
             </div>
-            <div class="form-group">
-                <label for="pageLimitInput">Лимит страниц</label>
-                <input type="number" class="form-control" id="pageLimitInput" name="pageLimit" placeholder="Введите макс. кол-во страниц для парсинга" required>
-            </div>
-            <button type="button" class="btn btn-primary" onclick="submitForm()">Начать</button>
-        </form>
-    </div>
+        </div>
+        <div class="form-group">
+            <label for="pageLimitInput">Лимит страниц</label>
+            <input type="number" class="form-control" id="pageLimitInput" name="pageLimit"
+                   placeholder="Введите макс. кол-во страниц для парсинга" required>
+        </div>
+        <button type="button" class="btn btn-primary" onclick="submitForm()">Начать</button>
+    </form>
+</div>
 
-    <script>
-        function pasteFromClipboard() {
-            navigator.clipboard.readText().then(
-                clipText => document.getElementById("urlInput").value = clipText);
-        }
+<script>
+    function pasteFromClipboard() {
+        navigator.clipboard.readText().then(
+            clipText => document.getElementById("urlInput").value = clipText);
+    }
 
-        async function submitForm() {
-            const url = document.getElementById('urlInput').value;
-            const pageLimit = document.getElementById('pageLimitInput').value;
+    const BASE_URL = ""
 
-            if (url && pageLimit) {
-                const data = {
-                    url: url,
-                    pageLimit: parseInt(pageResult)
-                };
-
-                try {
-                    const response = await fetch('/pages/base', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify(data)
-                    });
-                    if (response.status === 502) {
-                        await submitForm()
-                    }
-
-                    if (response.ok) {
-                        const blob = await response.blob();
-                        const url = window.URL.createObjectURL(blob);
-                        const a = document.createElement('a');
-                        a.href = url;
-                        a.download = 'file.xlsx';
-                        a.click();
-                    } else {
-                        console.error('Server returned an error status:', response.status);
-                    }
-                } catch (error) {
-                    console.error('Error sending request:', error);
-                }
+    async function checkResult(r) {
+        while (true) {
+            //const r = await fetch(BASE_URL + "/result");
+            // если нету
+            if (!r.ok) {
+                await new Promise(resolve => setTimeout(resolve, 3000));
             } else {
-                alert('Please fill out all fields.');
+                // если результат есть
+                const blob = await r.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'file.xlsx';
+                a.click();
+                return
             }
         }
-    </script>
+    }
+
+    async function submitForm() {
+        const url = document.getElementById('urlInput').value;
+        const pageLimit = document.getElementById('pageLimitInput').value;
+
+        if (url && pageLimit) {
+            const data = {
+                url: url,
+                pageLimit: parseInt(pageLimit)
+            };
+
+            try {
+                const response = fetch('/templates/index', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+                // await checkResult(response);
+                // if (response.status === 502) {
+                //     await handle(response)
+                // }
+                await waitForServer(response);
+                await new Promise(resolve => setTimeout(resolve, 15000));
+                // Download the result file
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'file.xlsx';
+                a.click();
+            } catch (error) {
+                console.error('Error sending request:', error);
+            }
+        } else {
+            alert('Please fill out all fields.');
+        }
+    }
+    async function waitForServer(response) {
+        // Check the server every 5 seconds to see if the request is complete
+        const interval = 3000;
+        while (true) {
+            const statusResponse = await fetch('/templates/index', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                // Include the response cookies in the request
+                credentials: 'include'
+            });
+
+
+            console.log("get try js")
+            // const status = await statusResponse.json();
+            if (js === "1") {
+                console.log("Ok");
+                // The request is complete, so stop checking the server
+                break;
+            }
+
+
+            await new Promise(resolve => setTimeout(resolve, interval));
+        }
+    }
+</script>
 </body>
 </html>
