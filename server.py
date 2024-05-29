@@ -35,7 +35,6 @@ async def start(request: Request):
     cfg.set_location_of_result_file("Результат")
     storage = ExcelStorage(cfg.location_of_result_file)
     state = ParserState(url)
-
     p = Parser(cfg, storage, state)
     state_ = p
     task = asyncio.create_task(p.parse())

@@ -55,7 +55,8 @@
     }
 
     const BASE_URL = ""
-
+    let parsedAds;
+    let message;
     async function checkResult() {
         while (true) {
             const r = await fetch(BASE_URL + "/result");
@@ -67,13 +68,13 @@
                 const progress = parsed / parseInt(r.headers.get('total')) * 100;
                 document.getElementById("progressBar").style.width = `${progress}%`;
                 document.getElementById("progressBar").setAttribute("aria-valuenow", progress);
-                const parsedAds = document.createElement('p');
-                parsedAds.textContent = `Parsed ads: ${parsed}`;
-                document.querySelector('.container').appendChild(parsedAds);
+
+                parsedAds.textContent = `Обработано: ${parsed}`;
                 await new Promise(resolve => setTimeout(resolve, 3000));
             } else {
                 document.getElementById("progressBar").style.width = `100%`;
                 document.getElementById("progressBar").setAttribute("aria-valuenow", 100);
+                message.textContent = "Парсинг завершен!"
                 const blob = await r.blob();
                 const url = window.URL.createObjectURL(blob);
                 const a = document.createElement('a');
@@ -90,8 +91,8 @@
         const pageLimit = document.getElementById('pageLimitInput').value;
 
         if (url && pageLimit) {
-            const message = document.createElement('p');
-            message.textContent = 'Парсинг начался...';
+            message = document.createElement('p');
+            message.textContent = 'Парсинг начался, пожалуйста, не начинайте новый, пока процесс не завершится...';
             document.querySelector('.container').appendChild(message);
             const data = {
                 url: url,
@@ -106,15 +107,19 @@
                     },
                     body: JSON.stringify(data)
                 });
-                await new Promise(resolve => setTimeout(resolve, 5000));
+                await new Promise(resolve => setTimeout(resolve, 10000));
 
-
-                const total = parseInt(response.headers.get('total'));
+                const r = await fetch(BASE_URL + "/result");
+                const total = parseInt(r.headers.get('total'));
 
                 // Display the total number of ads
                 const totalAds = document.createElement('p');
                 totalAds.textContent = `Предварительное общее число обьявлений: ${total}`;
                 document.querySelector('.container').appendChild(totalAds);
+
+                parsedAds = document.createElement('p');
+                parsedAds.textContent = `Обработано: ${0}`;
+                document.querySelector('.container').appendChild(parsedAds);
                 await checkResult();
 
             } catch (error) {
