@@ -7,6 +7,18 @@
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <style>
+        /* Add padding to the progress bar */
+        .progress {
+            margin-top: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        /* Add padding to the progress bar */
+        .progress-bar {
+            padding: 0.5rem;
+        }
+    </style>
 </head>
 <body>
 <div class="container mt-5">
@@ -28,6 +40,11 @@
                    placeholder="Введите макс. кол-во страниц для парсинга" required>
         </div>
         <button type="button" class="btn btn-primary" onclick="submitForm()">Начать</button>
+        <div class="progress" style="height: 30px;">
+            <div id="progressBar" class="progress-bar" role="progressbar" style="width: 0%;" aria-valuenow="0"
+                 aria-valuemin="0" aria-valuemax="100"></div>
+        </div>
+
     </form>
 </div>
 
@@ -39,14 +56,24 @@
 
     const BASE_URL = ""
 
-    async function checkResult(r) {
+    async function checkResult() {
         while (true) {
-            //const r = await fetch(BASE_URL + "/result");
-            // если нету
-            if (!r.ok) {
+            const r = await fetch(BASE_URL + "/result");
+
+            if (r.headers.get('X-Result') === 'false') {
+                const parsed = parseInt(r.headers.get('parsed'));
+
+                // Update the progress bar and display the number of parsed ads
+                const progress = parsed / parseInt(r.headers.get('total')) * 100;
+                document.getElementById("progressBar").style.width = `${progress}%`;
+                document.getElementById("progressBar").setAttribute("aria-valuenow", progress);
+                const parsedAds = document.createElement('p');
+                parsedAds.textContent = `Parsed ads: ${parsed}`;
+                document.querySelector('.container').appendChild(parsedAds);
                 await new Promise(resolve => setTimeout(resolve, 3000));
             } else {
-                // если результат есть
+                document.getElementById("progressBar").style.width = `100%`;
+                document.getElementById("progressBar").setAttribute("aria-valuenow", 100);
                 const blob = await r.blob();
                 const url = window.URL.createObjectURL(blob);
                 const a = document.createElement('a');
@@ -63,32 +90,33 @@
         const pageLimit = document.getElementById('pageLimitInput').value;
 
         if (url && pageLimit) {
+            const message = document.createElement('p');
+            message.textContent = 'Парсинг начался...';
+            document.querySelector('.container').appendChild(message);
             const data = {
                 url: url,
                 pageLimit: parseInt(pageLimit)
             };
 
             try {
-                const response = fetch('/templates/index', {
+                const response = fetch('/parse', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify(data)
                 });
-                // await checkResult(response);
-                // if (response.status === 502) {
-                //     await handle(response)
-                // }
-                await waitForServer(response);
-                await new Promise(resolve => setTimeout(resolve, 15000));
-                // Download the result file
-                const blob = await response.blob();
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = 'file.xlsx';
-                a.click();
+                await new Promise(resolve => setTimeout(resolve, 5000));
+
+
+                const total = parseInt(response.headers.get('total'));
+
+                // Display the total number of ads
+                const totalAds = document.createElement('p');
+                totalAds.textContent = `Предварительное общее число обьявлений: ${total}`;
+                document.querySelector('.container').appendChild(totalAds);
+                await checkResult();
+
             } catch (error) {
                 console.error('Error sending request:', error);
             }
@@ -96,32 +124,7 @@
             alert('Please fill out all fields.');
         }
     }
-    async function waitForServer(response) {
-        // Check the server every 5 seconds to see if the request is complete
-        const interval = 3000;
-        while (true) {
-            const statusResponse = await fetch('/templates/index', {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                // Include the response cookies in the request
-                credentials: 'include'
-            });
 
-
-            console.log("get try js")
-            // const status = await statusResponse.json();
-            if (js === "1") {
-                console.log("Ok");
-                // The request is complete, so stop checking the server
-                break;
-            }
-
-
-            await new Promise(resolve => setTimeout(resolve, interval));
-        }
-    }
 </script>
 </body>
 </html>
