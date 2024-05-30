@@ -7,7 +7,7 @@ from tkinter import messagebox
 from config import logger
 from excel_storage import ExcelStorage
 
-cfg = Config()
+cfg = None
 state = None
 
 class ParserGUI:
@@ -61,7 +61,6 @@ class ParserGUI:
     def process_url(self):
         global state
         try:
-            cfg.set_url_to_parse(self.url_entry.get())
             state = ParserState(self.url_entry.get())
             n = state.number
             self.number_of_elems_label.configure(
@@ -84,14 +83,17 @@ class ParserGUI:
 
     @logger.catch()
     def parse_button_event(self):
-        global state
+        global state, cfg
         if self.path_entry.get() == "":
             messagebox.showinfo("Ошибка", "Введите имя файла для выгрузки результата!")
         elif self.url_entry.get() == "":
             messagebox.showinfo("Ошибка", "Введите URL!")
         else:
-            cfg.set_url_to_parse(self.url_entry.get())
-            cfg.set_location_of_result_file(self.path_entry.get())
+            cfg = Config(
+                url=self.url_entry.get(),
+                filename=self.path_entry.get(),
+                limit=80
+            )
             storage = ExcelStorage(cfg.location_of_result_file)
             def move_progress(i):
                 self.progressbar.set(i / min(cfg.limit * 50, state.number))

@@ -1,5 +1,6 @@
 import asyncio
 import datetime
+import urllib
 from selectolax.parser import HTMLParser
 from urllib.parse import unquote
 import json
@@ -7,6 +8,7 @@ import vacancy_serializer
 import parsed_item
 from api import API
 from task_runner import TaskRunner
+
 
 
 class ParserState:
@@ -18,7 +20,7 @@ class ParserState:
         while data is None:
             if retry == 10:
                 print("Неудача при попытке обратиться к серверу")
-                exit(1)
+                return
             r = API.synchronic_request(url)
             scripts = HTMLParser(r.text).css('script')
             for script in scripts:
@@ -85,7 +87,7 @@ class Parser:
                 datetime.datetime.fromtimestamp(int(item["sortTimeStamp"]) / 1000).strftime('%Y-%m-%d %H:%M:%S'))
         )
         if not ((parsed_job.min_salary == 0) and (parsed_job.max_salary == 0)):
-            print(self.number_of_parsed_items, parsed_job)
+            print(self.number_of_parsed_items)
             self.number_of_parsed_items += 1
             self.data_storage.add_cell(parsed_job)
             if self.progress_callback is not None:
@@ -108,8 +110,8 @@ class Parser:
         return parsed_jobs
 
     async def parse_page(self, url):
-        max_retries = 10
-        retry_delay = 3
+        max_retries = 6
+        retry_delay = 30
         for retry in range(max_retries):
             r = None
             try:
@@ -126,13 +128,18 @@ class Parser:
                 await asyncio.sleep(retry_delay)
 
     async def parse(self):
-
         num = self.number_of_items
         await self.parse_page(self.cfg.url_to_parse)
         tasks = []
-        url = self.cfg.url_to_parse + "&p=1"
-        for i in range(2, min(self.cfg.limit + 2, 2 + num // 50)):
-            url = url.replace(f"&p={i - 1}", f"&p={i}")
+        base_url = self.cfg.url_to_parse
+        for i in range(2, min(self.cfg.limit + 1, 2 + num // 50)):
+            if bool(urllib.parse.urlparse(base_url).query):
+                param_prefix = "&"
+            else:
+                param_prefix = "?"
+
+            url = f"{base_url}{param_prefix}p={i}"
+
             tasks.append(url)
         await TaskRunner().run_tasks(self.parse_page, tasks)
         print(self.number_of_parsed_items)
