@@ -1,2 +1,2 @@
 # avito-parser-vacancy
-Some description
+Parser of avito.ru, focused in vacancies
